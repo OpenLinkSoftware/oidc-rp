@@ -319,8 +319,6 @@ class RelyingParty extends JSONDocument {
       assert(this.provider, 'OpenID Configuration is not initialized.')
       configuration = this.provider.configuration
       assert(configuration, 'OpenID Configuration is not initialized.')
-      assert(configuration.end_session_endpoint,
-        'OpenID Configuration is missing end_session_endpoint.')
     } catch (error) {
       return Promise.reject(error)
     }
