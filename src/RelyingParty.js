@@ -296,11 +296,7 @@ class RelyingParty extends JSONDocument {
 
     this.clearSession()
 
-    let uri = configuration.end_session_endpoint
-    let method = 'get'
-
-    return fetch(uri, {method})
-      .then(onHttpError('Error logging out'))
+    return Promise.resolve(configuration.end_session_endpoint)
 
     // TODO: Validate `frontchannel_logout_uri` if necessary
     /**
