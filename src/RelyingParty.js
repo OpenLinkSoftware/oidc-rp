@@ -294,9 +294,17 @@ class RelyingParty extends JSONDocument {
       return Promise.reject(error)
     }
 
-    this.clearSession()
+    if (!configuration.end_session_endpoint) {
+      this.clearSession()
+      return Promise.resolve(undefined)
+    }
 
-    return Promise.resolve(configuration.end_session_endpoint)
+    let uri = configuration.end_session_endpoint
+    let method = 'get'
+
+    return fetch(uri, {method, credentials: 'include'})
+      .then(onHttpError('Error logging out'))
+      .then(() => this.clearSession())
 
     // TODO: Validate `frontchannel_logout_uri` if necessary
     /**
