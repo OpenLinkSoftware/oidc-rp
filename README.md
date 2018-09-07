@@ -43,7 +43,7 @@
 ## Install
 
 ```bash
-$ npm install @trust/oidc-rp --save
+$ npm install @solid/oidc-rp --save
 ```
 
 ## Usage
@@ -51,7 +51,7 @@ $ npm install @trust/oidc-rp --save
 ### Node.js
 
 ```
-const RelyingParty = require('@trust/oidc-rp')
+const RelyingParty = require('@solid/oidc-rp')
 ```
 
 ### Browser
@@ -65,7 +65,7 @@ the library is exposed as a global var, `OIDC`.
 ### Install
 
 ```bash
-$ git clone git@github.com:anvilresearch/oidc-rp.git
+$ git clone git@github.com:solid/oidc-rp.git
 $ cd oidc-rp
 $ npm install
 ```
@@ -97,7 +97,7 @@ $ npm run karma   // Karma (browser)
 
 ### Issues
 
-* please file [issues](https://github.com/anvilresearch/oidc-rp/issues) :)
+* please file [issues](https://github.com/solid/oidc-rp/issues) :)
 * for bug reports, include relevant details such as platform, version, relevant data, and stack traces
 * be sure to check for existing issues before opening new ones
 * read the documentation before asking questions

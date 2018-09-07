@@ -45,12 +45,12 @@ class Session {
   /**
    * @param response {AuthenticationResponse}
    *
-   * @returns {Session}
+   * @returns {Session} RelyingParty Session object
    */
   static fromAuthResponse (response) {
     const RelyingParty = require('./RelyingParty')  // import here due to circular dep
 
-    let payload = response.decoded.payload
+    let idClaims = response.decoded && response.decoded.payload || {}
 
     let { rp } = response
 
@@ -65,14 +65,14 @@ class Session {
     let options = {
       credentialType,
       sessionKey,
-      issuer: payload.iss,
+      issuer: idClaims.iss,
+      idClaims,
       authorization: {
         client_id: registration['client_id'],
         access_token: response.params['access_token'],
         id_token: response.params['id_token'],
         refresh_token: response.params['refresh_token']
-      },
-      idClaims: response.decoded && response.decoded.payload,
+      }
     }
 
     return Session.from(options)

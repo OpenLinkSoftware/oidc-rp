@@ -11,11 +11,29 @@ const FormUrlEncoded = require('./FormUrlEncoded')
 const IDToken = require('./IDToken')
 const Session = require('./Session')
 const onHttpError = require('./onHttpError')
+const HttpError = require('standard-http-error')
 
 /**
  * AuthenticationResponse
  */
 class AuthenticationResponse {
+  /**
+   * @param rp {RelyingParty}
+   * @param [redirect] {string} req.query
+   * @param [body] {string} req.body.text
+   * @param session {Session|Storage} req.session or localStorage or similar
+   * @param params {object} hashmap
+   * @param mode {string} 'query'/'fragment'/'form_post',
+   *   determined in `parseResponse()`
+   */
+  constructor ({rp, redirect, body, session, mode, params = {}}) {
+    this.rp = rp
+    this.redirect = redirect
+    this.body = body
+    this.session = session
+    this.mode = mode
+    this.params = params
+  }
 
   /**
    * validateResponse
@@ -24,14 +42,15 @@ class AuthenticationResponse {
    * Authentication response validation.
    *
    * @param {string|Object} response
-   * @returns {Promise}
+   *
+   * @returns {Promise<Session>}
    */
   static validateResponse (response) {
     return Promise.resolve(response)
       .then(this.parseResponse)
+      .then(this.errorResponse)
       .then(this.matchRequest)
       .then(this.validateStateParam)
-      .then(this.errorResponse)
       .then(this.validateResponseMode)
       .then(this.validateResponseParams)
       .then(this.exchangeAuthorizationCode)
@@ -42,15 +61,16 @@ class AuthenticationResponse {
   /**
    * parseResponse
    *
-   * @param {Object} response
-   * @returns {Promise}
+   * @param {object} response
+   *
+   * @returns {object}
    */
   static parseResponse (response) {
     let {redirect, body} = response
 
     // response must be either a redirect uri or request body, but not both
     if ((redirect && body) || (!redirect && !body)) {
-      throw new Error('Invalid response mode')
+      throw new HttpError(400, 'Invalid response mode')
     }
 
     // parse redirect uri
@@ -59,7 +79,7 @@ class AuthenticationResponse {
       let {search, hash} = url
 
       if ((search && hash) || (!search && !hash)) {
-        throw new Error('Invalid response mode')
+        throw new HttpError(400, 'Invalid response mode')
       }
 
       if (search) {
@@ -77,6 +97,37 @@ class AuthenticationResponse {
     if (body) {
       response.params = FormUrlEncoded.decode(body)
       response.mode = 'form_post'
+    }
+
+    return response
+  }
+
+  /**
+   * errorResponse
+   *
+   * @param {AuthenticationResponse} response
+   *
+   * @throws {Error} If response params include the OAuth2 'error' param,
+   *   throws an error based on it.
+   *
+   * @returns {AuthenticationResponse} Chainable
+   *
+   * @todo Figure out HTTP status code (typically 400, 401 or 403)
+   *   based on the OAuth2/OIDC `error` code, probably using an external library
+   */
+  static errorResponse (response) {
+    const errorCode = response.params.error
+
+    if (errorCode) {
+      const errorParams = {}
+      errorParams['error'] = errorCode
+      errorParams['error_description'] = response.params['error_description']
+      errorParams['error_uri'] = response.params['error_uri']
+      errorParams['state'] = response.params['state']
+
+      const error = new Error(`AuthenticationResponse error: ${errorCode}`)
+      error.info = errorParams
+      throw error
     }
 
     return response
@@ -128,22 +179,6 @@ class AuthenticationResponse {
 
       return response
     })
-  }
-
-  /**
-   * errorResponse
-   *
-   * @param {Object} response
-   * @returns {Promise}
-   */
-  static errorResponse (response) {
-    let error = response.params.error
-
-    if (error) {
-      return Promise.reject(error)
-    }
-
-    return Promise.resolve(response)
   }
 
   /**
@@ -321,14 +356,25 @@ class AuthenticationResponse {
   /**
    * decodeIDToken
    *
-   * @param {Object} response
-   * @returns {Promise}
+   * Note: If the `id_token` is not present in params, this method does not
+   * get called (short-circuited in `validateIDToken()`).
+   *
+   * @param response {AuthenticationResponse}
+   * @param response.params {object}
+   * @param [response.params.id_token] {string} IDToken encoded as a JWT
+   *
+   * @returns {AuthenticationResponse} Chainable
    */
   static decodeIDToken (response) {
     let jwt = response.params.id_token
 
-    if (jwt) {
+    try {
       response.decoded = IDToken.decode(jwt)
+    } catch (decodeError) {
+      const error = new HttpError(400, 'Error decoding ID Token')
+      error.cause = decodeError
+      error.info = { id_token: jwt }
+      throw error
     }
 
     return response

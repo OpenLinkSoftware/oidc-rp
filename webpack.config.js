@@ -1,8 +1,9 @@
-var path = require('path')
+const path = require('path')
 
 module.exports = {
+  mode: 'production',
   entry: [
-    './src/index.js'
+    './lib/index.js'
   ],
   output: {
     path: path.join(__dirname, '/dist/'),
@@ -11,16 +12,6 @@ module.exports = {
     libraryTarget: 'var'
   },
   module: {
-    loaders: [
-      {
-        test: /\.js$/,
-        exclude: /(node_modules)/,
-        loader: 'babel-loader',
-        query: {
-          presets: ['es2015']
-        }
-      }
-    ]
   },
   externals: {
     'node-fetch': 'fetch',
