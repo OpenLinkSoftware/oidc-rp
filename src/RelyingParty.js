@@ -6,7 +6,7 @@ const fetch = require('node-fetch')
 const { URL } = require('whatwg-url')
 const Headers = fetch.Headers ? fetch.Headers : global.Headers
 const {JSONDocument} = require('@trust/json-document')
-const {JWKSet} = require('@trust/jose')
+const {JWKSet} = require('@solid/jose')
 const AuthenticationRequest = require('./AuthenticationRequest')
 const AuthenticationResponse = require('./AuthenticationResponse')
 const RelyingPartySchema = require('./RelyingPartySchema')
@@ -397,13 +397,17 @@ class RelyingParty extends JSONDocument {
       return Promise.reject(error)
     }
 
-    this.clearSession()
+    if (!configuration.end_session_endpoint) {
+      this.clearSession()
+      return Promise.resolve(undefined)
+    }
 
     let uri = configuration.end_session_endpoint
     let method = 'get'
 
-    return fetch(uri, {method})
+    return fetch(uri, {method, credentials: 'include'})
       .then(onHttpError('Error logging out'))
+      .then(() => this.clearSession())
 
     // TODO: Validate `frontchannel_logout_uri` if necessary
     /**

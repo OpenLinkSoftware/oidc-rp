@@ -21,7 +21,7 @@ let expect = chai.expect
 const PoPToken = require('../src/PoPToken')
 const Session = require('../src/Session')
 const TestKeys = require('./keys/index')
-const {JWT, JWK} = require('@trust/jose')
+const {JWT, JWK} = require('@solid/jose')
 
 const providerUri = 'https://provider.example.com'
 const resourceServerUri = 'https://rs.example.net'
@@ -77,4 +77,3 @@ describe('PoPToken', () => {
     })
   })
 })
-
