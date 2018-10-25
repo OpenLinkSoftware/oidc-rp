@@ -443,17 +443,26 @@ class AuthenticationResponse {
     let rp = response.rp
     let provider = rp.provider
     let decoded = response.decoded
+    let isFreshJwks = false
 
     return Promise.resolve(provider.jwks)
 
-      .then(jwks => jwks ? jwks : rp.jwks())
+      .then(jwks => jwks ? jwks : (isFreshJwks = true, rp.jwks()))
 
       .then(jwks => {
-        if (decoded.resolveKeys(jwks)) {
+        if (decoded.resolveKeys(jwks))
           return Promise.resolve(response)
-        } else {
-          throw new Error('Cannot resolve signing key for ID Token')
+
+        if (!isFreshJwks) {
+          // The OP JWK Set cached by the RP may be stale due to key rotation by the OP.
+          return rp.jwks().then(jwks => {
+            if (decoded.resolveKeys(jwks))
+              return Promise.resolve(response)
+            throw new Error('Cannot resolve signing key for ID Token')
+          })
         }
+
+        throw new Error('Cannot resolve signing key for ID Token')
       })
   }
 
