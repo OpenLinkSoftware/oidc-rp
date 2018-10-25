@@ -108,9 +108,11 @@ class RelyingParty extends JSONDocument {
    * @param options {Object}
    * @param options.defaults
    * @param [options.store] {Session|Storage}
+   * @param [oobRegistration] {Object} Object providing getRegistration(key) function for out-of-band registrations
+   * @param [idpId] {string} A tag identifying the provider used for looking up out-of-band registration data.
    * @returns {Promise<RelyingParty>} RelyingParty instance, registered.
    */
-  static register (issuer, registration, options) {
+  static register (issuer, registration, options, idpId, oobRegistration) {
     let rp = new RelyingParty({
       provider: { url: issuer },
       defaults: Object.assign({}, options.defaults),
@@ -120,7 +122,10 @@ class RelyingParty extends JSONDocument {
     return Promise.resolve()
       .then(() => rp.discover())
       .then(() => rp.jwks())
-      .then(() => rp.register(registration))
+      .then(() => { 
+        assert(rp.provider.configuration, 'OpenID Configuration is not initialized.')
+        return rp.provider.configuration.registration_endpoint ? rp.register(registration) : rp.getRegistration(registration, idpId, oobRegistration) 
+      })
       .then(() => rp)
   }
 
@@ -184,6 +189,26 @@ class RelyingParty extends JSONDocument {
 
   serialize () {
     return JSON.stringify(this)
+  }
+
+  /**
+   * @description 
+   * Retrieves an existing Relying Party registration for a provider which does 
+   * not support dynamic registration and which requires pre-registration by
+   * some 'out of band' method.
+   *
+   * @param options {Object}
+   * @param idp {string} Key identifying which registration data should be retrieved.
+   * @returns {Promise<Object>} Resolves with the registration response object.
+   */
+  getRegistration (options, idp, oobRegistration) {
+    return Promise.resolve()
+      .then(() => {
+        return this.registration = oobRegistration.getRegistration(idp)
+      })
+      .catch(error => {
+        throw error
+      })
   }
 
   /**
@@ -253,24 +278,28 @@ class RelyingParty extends JSONDocument {
   /**
    * userinfo
    *
-   * @description Promises the authenticated user's claims.
+   * @description
+   * Promises the authenticated user's claims.
+   * access_token can be supplied directly. If not, it is retrieved from storage, if available. 
+   * Depending on when userinfo is called, access_token may not yet have been saved to storage.
+   *
+   * @param accessToken {string=} Optional access token from current user session for use against the User Info endpoint
    * @returns {Promise}
    */
-  userinfo () {
+  userinfo (accessToken) {
     try {
       let configuration = this.provider.configuration
 
       assert(configuration, 'OpenID Configuration is not initialized.')
       assert(configuration.userinfo_endpoint, 'OpenID Configuration is missing userinfo_endpoint.')
 
+      accessToken = accessToken || this.store.access_token
+      assert(accessToken, 'Missing access token.')
+
       let uri = configuration.userinfo_endpoint
-      let access_token = this.store.access_token
-
-      assert(access_token, 'Missing access token.')
-
       let headers = new Headers({
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${access_token}`
+        'Authorization': `Bearer ${accessToken}`
       })
 
       return fetch(uri, {headers})
@@ -391,8 +420,6 @@ class RelyingParty extends JSONDocument {
       assert(this.provider, 'OpenID Configuration is not initialized.')
       configuration = this.provider.configuration
       assert(configuration, 'OpenID Configuration is not initialized.')
-      assert(configuration.end_session_endpoint,
-        'OpenID Configuration is missing end_session_endpoint.')
     } catch (error) {
       return Promise.reject(error)
     }
