@@ -18,7 +18,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/anvilresearch/oidc-rp.git"
+    "url": "git+https://github.com/solid/oidc-rp.git"
   },
   "author": "Anvil Research, Inc.",
   "contributors": [
@@ -34,9 +34,9 @@
   ],
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/anvilresearch/oidc-rp/issues"
+    "url": "https://github.com/solid/oidc-rp/issues"
   },
-  "homepage": "https://github.com/anvilresearch/oidc-rp#readme",
+  "homepage": "https://github.com/solid/oidc-rp#readme",
   "dependencies": {
     "@solid/jose": "0.1.8",
     "@trust/json-document": "^0.1.4",

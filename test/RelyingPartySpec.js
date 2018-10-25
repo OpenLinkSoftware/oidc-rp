@@ -305,9 +305,7 @@ describe('RelyingParty', () => {
       return rp.logout().should.be.rejectedWith(/OpenID Configuration is not initialized/)
     })
 
-//disable
-/***
-    it('should reject with missing end_session_endpoint', () => {
+    it('should return undefined when no end_session_endpoint exists', () => {
       let options = {
         provider: {
           configuration: { issuer: 'https://forge.anvil.io' }
@@ -315,11 +313,12 @@ describe('RelyingParty', () => {
       }
       let rp = new RelyingParty(options)
 
-      return rp.logout().should.be.rejectedWith(/OpenID Configuration is missing end_session_endpoint/)
+      return rp.logout()
+        .then(response => {
+          expect((response === undefined).should.be.true())
+        })
     })
-***/
-//disable
-/****
+
     it('should make a request to the end_session_endpoint', () => {
       let logoutRequest = nock(providerUrl).get('/logout').reply(200)
 
@@ -334,9 +333,7 @@ describe('RelyingParty', () => {
           expect(logoutRequest.isDone()).to.be.true()
         })
     })
-****/
-//disable
-/***
+
     it('should reject on http error', done => {
       let providerUrl = 'https://notfound'
 
@@ -356,7 +353,6 @@ describe('RelyingParty', () => {
           done()
         })
     })
-***/
   })
 
   describe('register', () => {
