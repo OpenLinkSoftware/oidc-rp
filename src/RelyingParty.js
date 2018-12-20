@@ -176,7 +176,7 @@ class RelyingParty extends JSONDocument {
       let params = this.defaults.register
       let body = JSON.stringify(Object.assign({}, params, options))
 
-      return fetch(uri, {method, headers, body})
+      return fetch(uri, {method, headers, body, compress: false})
         .then(onHttpError('Error registering client'))
         .then(response => {
           return response.json().then(json => this.registration = json)
