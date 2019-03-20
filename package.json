@@ -1,6 +1,6 @@
 {
   "name": "@solid/oidc-rp",
-  "version": "0.8.0",
+  "version": "0.9.0",
   "description": "OpenID Connect Relying Party client library",
   "main": "./lib/index.js",
   "module": "./src/index.js",
