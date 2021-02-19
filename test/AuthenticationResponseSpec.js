@@ -23,13 +23,19 @@ let expect = chai.expect
 const {JWT, JWKSet} = require('@solid/jose')
 const IDToken = require('../src/IDToken')
 const AuthenticationResponse = require('../src/AuthenticationResponse')
-const {RsaPrivateCryptoKey, RsaPublicCryptoKey} = require('./keys')
+const { getPublicKey, getPrivateKey } = require('./keys')
 
 /**
  * Tests
  */
 describe('AuthenticationResponse', () => {
   const providerJwks = require('./resources/example.com/jwks.json')
+
+  let publicKey, privateKey
+
+  before(async () => {
+
+  })
 
   afterEach(() => {
     nock.cleanAll()
@@ -309,7 +315,8 @@ describe('AuthenticationResponse', () => {
     })
 
     it('should not exchange code unless response type is exactly `code`', () => {
-      let tokenRequest = nock(providerUrl).post('/token').reply('200')
+      let tokenRequest = nock(providerUrl).post('/token')
+        .reply(200)
 
       response.request['response_type'] = 'code id_token token'
 
@@ -645,8 +652,8 @@ describe('AuthenticationResponse', () => {
   describe('verifySignature', () => {
     let response
 
-    beforeEach(() => {
-      let token = new IDToken({
+    beforeEach(async () => {
+      const token = new IDToken({
         header: {
           alg: 'RS256',
           kid: 'r4nd0mbyt3s'
@@ -659,21 +666,21 @@ describe('AuthenticationResponse', () => {
           iat: Math.floor(Date.now() / 1000),
           nonce: 'n0nc3'
         },
-        key: RsaPrivateCryptoKey
+        key: await getPrivateKey()
       })
 
-      return token.encode().then(jwt => {
-        let decoded = IDToken.decode(jwt)
-        decoded.key = RsaPublicCryptoKey
-        response = {
-          decoded,
-          rp: {
-            registration: {
-              id_token_signed_response_alg: 'RS256'
-            }
+      const jwt = await token.encode()
+      const decoded = IDToken.decode(jwt)
+      decoded.key = await getPublicKey()
+
+      response = {
+        decoded,
+        rp: {
+          registration: {
+            id_token_signed_response_alg: 'RS256'
           }
         }
-      })
+      }
     })
 
     it('should throw with mismatching signing algorithm', () => {
@@ -701,8 +708,8 @@ describe('AuthenticationResponse', () => {
   describe('validateExpires', () => {
     let response
 
-    beforeEach(() => {
-      let token = new IDToken({
+    beforeEach(async () => {
+      const token = new IDToken({
         header: {
           alg: 'RS256',
           kid: 'r4nd0mbyt3s'
@@ -715,21 +722,21 @@ describe('AuthenticationResponse', () => {
           iat: Math.floor(Date.now() / 1000),
           nonce: 'n0nc3'
         },
-        key: RsaPrivateCryptoKey
+        key: await getPrivateKey()
       })
 
-      return token.encode().then(jwt => {
-        let decoded = IDToken.decode(jwt)
-        decoded.key = RsaPublicCryptoKey
-        response = {
-          decoded,
-          rp: {
-            registration: {
-              id_token_signed_response_alg: 'RS256'
-            }
+      const jwt = await token.encode()
+      const decoded = IDToken.decode(jwt)
+      decoded.key = await getPublicKey()
+
+      response = {
+        decoded,
+        rp: {
+          registration: {
+            id_token_signed_response_alg: 'RS256'
           }
         }
-      })
+      }
     })
 
     it('should throw with expired ID Token', () => {
@@ -750,8 +757,8 @@ describe('AuthenticationResponse', () => {
   describe('verifyNonce', () => {
     let response
 
-    beforeEach(() => {
-      let token = new IDToken({
+    beforeEach(async () => {
+      const token = new IDToken({
         header: {
           alg: 'RS256',
           kid: 'r4nd0mbyt3s'
@@ -764,19 +771,19 @@ describe('AuthenticationResponse', () => {
           iat: Math.floor(Date.now() / 1000),
           nonce: 'QRGTj6K-tdhEps0rgQ6S0h_UQkIij3sy_Cx8VGR0EIw'
         },
-        key: RsaPrivateCryptoKey
+        key: await getPrivateKey()
       })
 
-      return token.encode().then(jwt => {
-        let decoded = IDToken.decode(jwt)
-        decoded.key = RsaPublicCryptoKey
-        response = {
-          decoded,
-          request: {
-            nonce: [234, 32, 145, 21]
-          }
+      const jwt = await token.encode()
+      const decoded = IDToken.decode(jwt)
+      decoded.key = await getPublicKey()
+
+      response = {
+        decoded,
+        request: {
+          nonce: [234, 32, 145, 21]
         }
-      })
+      }
     })
 
     it('should throw with missing nonce claim', () => {

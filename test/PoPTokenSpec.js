@@ -20,7 +20,7 @@ let expect = chai.expect
  */
 const PoPToken = require('../src/PoPToken')
 const Session = require('../src/Session')
-const TestKeys = require('./keys/index')
+const { sampleSessionKeys, serializedPrivateKey } = require('./keys/index')
 const {JWT, JWK} = require('@solid/jose')
 
 const providerUri = 'https://provider.example.com'
@@ -39,10 +39,10 @@ describe('PoPToken', () => {
         id_token: idToken
       },
       issuer: providerUri,
-      sessionKey: TestKeys.serializedPrivateKey
+      sessionKey: serializedPrivateKey
     })
 
-    return JWK.importKey(TestKeys.sampleSessionKeys.public)
+    return JWK.importKey(sampleSessionKeys.public)
       .then(importedKey => {
         publicSessionJwk = importedKey
       })
@@ -54,8 +54,8 @@ describe('PoPToken', () => {
       return PoPToken.issueFor(resourceServerUri, session)
         .then(token => JWT.decode(token))
         .then(popJwt => {
-          let { header, payload } = popJwt
-          expect(header).to.eql({ alg: 'RS256' })
+          const { header, payload } = popJwt
+          expect(header).to.have.property('alg', 'RS256')
 
           expect(payload.iss).to.equal(clientId)
           expect(payload.aud).to.equal('https://rs.example.net')

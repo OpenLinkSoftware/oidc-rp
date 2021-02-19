@@ -13,13 +13,13 @@ const sinon = require('sinon')
 chai.should()
 chai.use(chaiAsPromised)
 chai.use(require('dirty-chai'))
-let expect = chai.expect
+const { expect } = chai
 
 /**
  * Code under test
  */
 const AuthenticationRequest = require('../src/AuthenticationRequest')
-const TestKeys = require('./keys/index')
+const { sampleSessionKeys, serializedPrivateKey } = require('./keys/index')
 
 /**
  * Tests
@@ -239,7 +239,7 @@ describe('AuthenticationRequest', () => {
     before(() => {
       params = {}
       session = {}
-      sessionKeys = TestKeys.sampleSessionKeys
+      sessionKeys = sampleSessionKeys
 
       AuthenticationRequest.storeSessionKeys(sessionKeys, params, session)
     })
@@ -250,7 +250,7 @@ describe('AuthenticationRequest', () => {
 
     it('stores the serialized private key in session storage', () => {
       let key = 'oidc.session.privateKey'
-      expect(session[key]).to.equal(TestKeys.serializedPrivateKey)
+      expect(session[key]).to.equal(serializedPrivateKey)
     })
   })
 

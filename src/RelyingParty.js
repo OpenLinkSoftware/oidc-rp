@@ -5,11 +5,9 @@ const assert = require('assert')
 const fetch = require('node-fetch')
 const { URL } = require('whatwg-url')
 const Headers = fetch.Headers ? fetch.Headers : global.Headers
-const {JSONDocument} = require('@trust/json-document')
 const {JWKSet} = require('@solid/jose')
 const AuthenticationRequest = require('./AuthenticationRequest')
 const AuthenticationResponse = require('./AuthenticationResponse')
-const RelyingPartySchema = require('./RelyingPartySchema')
 const onHttpError = require('./onHttpError')
 const FormUrlEncoded = require('./FormUrlEncoded')
 
@@ -59,13 +57,19 @@ const FormUrlEncoded = require('./FormUrlEncoded')
  *  client.userinfo() => Promise
  *  client.logout()
  */
-class RelyingParty extends JSONDocument {
-
-  /**
-   * Schema
-   */
-  static get schema () {
-    return RelyingPartySchema
+class RelyingParty {
+  constructor ({ provider = {}, defaults, registration = {}, store = {} } = {}) {
+    this.provider = provider
+    this.defaults = defaults || {
+      popToken: false,
+      authenticate: {
+        response_type: 'id_token token',
+        display: 'page',
+        scope: ['openid']
+      }
+    }
+    this.registration = registration
+    this.store = store
   }
 
   /**
@@ -77,16 +81,16 @@ class RelyingParty extends JSONDocument {
    * @param {Object} data
    * @returns {Promise<RelyingParty>}
    */
-  static from (data) {
-    let rp = new RelyingParty(data)
-    let validation = rp.validate()
+  static async from (data) {
+    const rp = new RelyingParty(data)
+    const validation = rp.validate()
 
     // schema validation
     if (!validation.valid) {
-      return Promise.reject(new Error(JSON.stringify(validation)))
+      throw validation.error
     }
 
-    let jwks = rp.provider.jwks
+    const jwks = rp.provider.jwks
 
     // request the JWK Set if missing
     if (!jwks) {
@@ -113,7 +117,7 @@ class RelyingParty extends JSONDocument {
    * @returns {Promise<RelyingParty>} RelyingParty instance, registered.
    */
   static register (issuer, registration, options, idpId, oobRegistration) {
-    let rp = new RelyingParty({
+    const rp = new RelyingParty({
       provider: { url: issuer },
       defaults: Object.assign({}, options.defaults),
       store: options.store
@@ -122,11 +126,22 @@ class RelyingParty extends JSONDocument {
     return Promise.resolve()
       .then(() => rp.discover())
       .then(() => rp.jwks())
-      .then(() => { 
+      .then(() => {
         assert(rp.provider.configuration, 'OpenID Configuration is not initialized.')
-        return rp.provider.configuration.registration_endpoint ? rp.register(registration) : rp.getRegistration(registration, idpId, oobRegistration) 
+        return rp.provider.configuration.registration_endpoint ? rp.register(registration) : rp.getRegistration(registration, idpId, oobRegistration)
       })
       .then(() => rp)
+  }
+
+  validate () {
+    if (!this.provider || !this.provider.url) {
+      return {
+        valid: false,
+        error: new Error('Provider url is required.')
+      }
+    }
+
+    return { valid: true }
   }
 
   /**
@@ -192,8 +207,8 @@ class RelyingParty extends JSONDocument {
   }
 
   /**
-   * @description 
-   * Retrieves an existing Relying Party registration for a provider which does 
+   * @description
+   * Retrieves an existing Relying Party registration for a provider which does
    * not support dynamic registration and which requires pre-registration by
    * some 'out of band' method.
    *
@@ -280,7 +295,7 @@ class RelyingParty extends JSONDocument {
    *
    * @description
    * Promises the authenticated user's claims.
-   * access_token can be supplied directly. If not, it is retrieved from storage, if available. 
+   * access_token can be supplied directly. If not, it is retrieved from storage, if available.
    * Depending on when userinfo is called, access_token may not yet have been saved to storage.
    *
    * @param accessToken {string=} Optional access token from current user session for use against the User Info endpoint

@@ -20,7 +20,6 @@ let expect = chai.expect
  * Code under test
  */
 const RelyingParty = require('../src/RelyingParty')
-const RelyingPartySchema = require('../src/RelyingPartySchema')
 const AuthenticationRequest = require('../src/AuthenticationRequest')
 const AuthenticationResponse = require('../src/AuthenticationResponse')
 
@@ -38,16 +37,10 @@ describe('RelyingParty', () => {
     nock.cleanAll()
   })
 
-  describe('schema', () => {
-    it('should reference the RelyingPartySchema', () => {
-      RelyingParty.schema.should.equal(RelyingPartySchema)
-    })
-  })
-
   describe('from', () => {
     it('should reject with invalid argument', () => {
       return RelyingParty.from({ provider: {} })
-        .should.be.rejectedWith(/"valid":false/)
+        .should.be.rejectedWith(/Provider url is required/)
     })
 
     it('should reject if provider config is absent', () => {
@@ -511,9 +504,9 @@ describe('RelyingParty', () => {
 
   describe('serialize', () => {
     it('should return a JSON serialization', () => {
-      let rp = new RelyingParty({})
+      const rp = new RelyingParty({})
 
-      expect(rp.serialize()).to.equal('{"defaults":{"popToken":false,"authenticate":{"response_type":"id_token token","display":"page","scope":["openid"]}},"store":{}}')
+      expect(rp.serialize()).to.equal('{"provider":{},"defaults":{"popToken":false,"authenticate":{"response_type":"id_token token","display":"page","scope":["openid"]}},"registration":{},"store":{}}')
     })
   })
 

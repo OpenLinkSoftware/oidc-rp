@@ -3,7 +3,7 @@
  */
 const { URL } = require('whatwg-url')
 const assert = require('assert')
-const crypto = require('@trust/webcrypto')
+const { crypto } = require('@solid/jose')
 const base64url = require('base64url')
 const fetch = require('node-fetch')
 const Headers = fetch.Headers ? fetch.Headers : global.Headers
@@ -450,14 +450,16 @@ class AuthenticationResponse {
       .then(jwks => jwks ? jwks : (isFreshJwks = true, rp.jwks()))
 
       .then(jwks => {
-        if (decoded.resolveKeys(jwks))
+        if (decoded.resolveKeys(jwks)) {
           return Promise.resolve(response)
+        }
 
         if (!isFreshJwks) {
           // The OP JWK Set cached by the RP may be stale due to key rotation by the OP.
           return rp.jwks().then(jwks => {
-            if (decoded.resolveKeys(jwks))
+            if (decoded.resolveKeys(jwks)) {
               return Promise.resolve(response)
+            }
             throw new Error('Cannot resolve signing key for ID Token')
           })
         }
