@@ -3,8 +3,7 @@
  */
 const assert = require('assert')
 const base64url = require('base64url')
-const crypto = require('@trust/webcrypto')
-const { JWT } = require('@solid/jose')
+const { crypto, JWT } = require('@solid/jose')
 const FormUrlEncoded = require('./FormUrlEncoded')
 const { URL } = require('whatwg-url')
 

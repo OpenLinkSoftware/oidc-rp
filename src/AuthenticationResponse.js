@@ -3,7 +3,7 @@
  */
 const { URL } = require('whatwg-url')
 const assert = require('assert')
-const crypto = require('@trust/webcrypto')
+const { crypto } = require('@solid/jose')
 const base64url = require('base64url')
 const fetch = require('node-fetch')
 const Headers = fetch.Headers ? fetch.Headers : global.Headers
